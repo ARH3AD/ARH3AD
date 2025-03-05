@@ -1,4 +1,4 @@
-// AR3 PANEL, made by Alan Ruelas, v1.4, Ultima Actualizacion (04-Mar-2025)
+// AR3 PANEL, made by Alan Ruelas, v1.3, Ultima Actualizacion (04-Mar-2025)
 
 
 (function (thisObj) {
@@ -6,7 +6,7 @@
    var panel = thisObj instanceof Panel ? thisObj : new Window("palette", "Quick Actions", undefined, { resizeable: true });
 
             // Agregar texto como título en la parte superior
-            var titleText = panel.add("statictext", undefined, " By Alan Ruelas ©2025 | v.1.4", { multiline: true });
+            var titleText = panel.add("statictext", undefined, " By Alan Ruelas ©2025 | v.1.3", { multiline: true });
             titleText.alignment = "left";
             titleText.preferredSize.width = 250; // Ajusta el ancho para que se vea todo el texto
     
@@ -386,40 +386,19 @@ btnReverseKeyframes.onClick = function () {
 
 
 
-
-// Acción del botón: Descargar y reemplazar script con `curl` o `PowerShell`
+// Acción del botón: Ejecutar el script .command desde After Effects
 btnUpdateScript.onClick = function () {
-    var scriptFileName = "AR3_Pannel.jsx";
-    var scriptURL = "https://cdn.jsdelivr.net/gh/ARH3AD/ARH3AD@master/AR3%20Pannel.jsx?t=12345"; // URL de descarga directa
-    var scriptFolder = Folder.userData.fullName + "/Applications/Adobe After Effects 2025/Scripts/ScriptUI Panels/";
-    var scriptFile = new File(scriptFolder + scriptFileName);
+    var scriptFile = new File("~/downloads/update_ae_script.command");
 
-    if (!Folder(scriptFolder).exists) {
-        Folder(scriptFolder).create();
-    }
-
-    try {
-        var command;
-        if ($.os.indexOf("Windows") !== -1) {
-            // Windows: Usar PowerShell para descargar
-            command = 'powershell -Command "(New-Object System.Net.WebClient).DownloadFile(\'' + scriptURL + '\', \'' + scriptFile.fsName + '\')"';
-        } else {
-            // macOS/Linux: Usar curl
-            command = 'curl -o "' + scriptFile.fsName + '" "' + scriptURL + '"';
-        }
-
-        var shell = new File("/bin/sh");
-        if (shell.exists) {
-            shell.execute(command);
-        } else {
-            alert("❌ Error: No se pudo ejecutar la descarga.");
-        }
-
-        alert("✅ Script actualizado correctamente.\nReinicia After Effects o vuelve a cargarlo manualmente.");
-    } catch (e) {
-        alert("❌ Error al descargar el script: " + e.toString());
+    if (scriptFile.exists) {
+        scriptFile.execute();
+        alert("⏳ Ejecutando actualización...\nVerifica Terminal para ingresar contraseña si es necesario.");
+    } else {
+        alert("❌ Error: No se encontró el script de actualización en el escritorio.");
     }
 };
+
+
 
 
 
