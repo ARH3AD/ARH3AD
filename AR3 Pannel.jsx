@@ -390,7 +390,7 @@ btnReverseKeyframes.onClick = function () {
 // Acción del botón: Descargar y reemplazar script con `curl` o `PowerShell`
 btnUpdateScript.onClick = function () {
     var scriptFileName = "AR3_Pannel.jsx";
-    var scriptURL = "https://cdn.jsdelivr.net/gh/ARH3AD/ARH3AD/AR3%20Pannel.jsx"; // URL de descarga directa
+    var scriptURL = "https://cdn.jsdelivr.net/gh/ARH3AD/ARH3AD@master/AR3%20Pannel.jsx?t=12345"; // URL de descarga directa
     var scriptFolder = Folder.userData.fullName + "/Applications/Adobe After Effects 2025/Scripts/ScriptUI Panels/";
     var scriptFile = new File(scriptFolder + scriptFileName);
 
