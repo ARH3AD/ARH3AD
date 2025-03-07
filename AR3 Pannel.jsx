@@ -494,7 +494,7 @@ btnOrganizeProject.onClick = function () {
     }
 
     // Tipos de archivos que se deben mover
-    var mediaExtensions = ["mp4", "mov", "avi", "mkv", "jpg", "png", "tif", "tga", "bmp", "gif", "svg", "ai", "psd", "eps", "webp", "CR3"];
+    var mediaExtensions = ["mp4", "mov", "avi", "mkv", "jpg", "png", "tif", "tga", "bmp", "gif", "svg", "ai", "psd", "eps", "webp", "CR3", "jpeg"];
     var audioExtensions = ["mp3", "wav", "aac", "ogg", "flac"];
 
     var movedFiles = 0;
