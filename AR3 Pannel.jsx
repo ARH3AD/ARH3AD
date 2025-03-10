@@ -1,4 +1,4 @@
-// AR3 PANEL, made by Alan Ruelas, v1.5, Ultima Actualizacion (04-Mar-2025)
+// AR3 PANEL, made by Alan Ruelas, v1.5, Ultima Actualizacion (10-Mar-2025)
 
 
 (function (thisObj) {
@@ -166,7 +166,11 @@
             }
         };
 
-  // 🔹 Add Null Camera - Crea un Null en 3D si alguna capa seleccionada es 3D y lo asigna como Parent
+
+
+
+
+// 🔹 Add Null Camera - Crea un Null en 3D si hay capas 3D y lo asigna como Parent SOLO a capas sin parent
 btnAddCamera.onClick = function () {
     var comp = app.project.activeItem;
     if (!comp || comp.selectedLayers.length === 0) {
@@ -176,37 +180,50 @@ btnAddCamera.onClick = function () {
 
     app.beginUndoGroup("Add Null Camera");
 
-    var selectedLayers = comp.selectedLayers; // Obtener capas seleccionadas
+    var selectedLayers = comp.selectedLayers;
     var is3DLayerPresent = false;
+    var layersWithoutParent = [];
 
-    // Verificar si alguna capa seleccionada es 3D
+    // Verificar si alguna capa seleccionada es 3D y filtrar las que no tienen Parent
     for (var i = 0; i < selectedLayers.length; i++) {
-        if (selectedLayers[i].threeDLayer) {
+        var layer = selectedLayers[i];
+        if (layer.threeDLayer) {
             is3DLayerPresent = true;
-            break;
+        }
+        if (layer.parent === null) { // Solo agregamos las capas que no tienen parent
+            layersWithoutParent.push(layer);
         }
     }
 
-    // Crear el Null y asignarle el modo 3D si es necesario
+    // Crear el Null y asignarle el modo 3D si hay capas 3D
     var newNull = comp.layers.addNull();
     newNull.name = "Null Camera";
-    if (is3DLayerPresent) {
-        newNull.threeDLayer = true;
+    newNull.threeDLayer = is3DLayerPresent; // Solo si hay capas 3D
+
+// Centrar el punto de anclaje del Null al centro de la composición
+var compCenter = [comp.width / 2, comp.height / 2, 0]; // Centro de la comp
+var nullCenter = [newNull.sourceRectAtTime(0, false).width / 2, newNull.sourceRectAtTime(0, false).height / 2, 0];
+
+newNull.transform.anchorPoint.setValue(nullCenter); // Mover el punto de anclaje al centro del Null
+newNull.transform.position.setValue(compCenter); // Centrar el Null en la composición
+
+
+    // Ajustar duración del Null al tiempo de las capas seleccionadas sin parent
+    if (layersWithoutParent.length > 0) {
+        var inPoint = Math.min.apply(null, layersWithoutParent.map(function(layer) { return layer.inPoint; }));
+        var outPoint = Math.max.apply(null, layersWithoutParent.map(function(layer) { return layer.outPoint; }));
+        newNull.inPoint = inPoint;
+        newNull.outPoint = outPoint;
     }
 
-    // Ajustar duración del Null al tiempo de las capas seleccionadas
-    var inPoint = Math.min.apply(null, selectedLayers.map(function(layer) { return layer.inPoint; }));
-    var outPoint = Math.max.apply(null, selectedLayers.map(function(layer) { return layer.outPoint; }));
-    newNull.inPoint = inPoint;
-    newNull.outPoint = outPoint;
-
-    // Asignar el Null como Parent de todas las capas seleccionadas
-    for (var i = 0; i < selectedLayers.length; i++) {
-        selectedLayers[i].parent = newNull;
+    // Asignar el Null como Parent SOLO a capas que no tengan Parent
+    for (var i = 0; i < layersWithoutParent.length; i++) {
+        layersWithoutParent[i].parent = newNull;
     }
 
     app.endUndoGroup();
 };
+
 
 
 
@@ -879,16 +896,3 @@ dropdownFX.onChange = function() {
         buildUI(thisObj).show();
     }
 })(this);
-
-
-
-
-
-
-
-
-
-
-
-
-
