@@ -1,4 +1,4 @@
-// AR3 PANEL, made by Alan Ruelas, v1.5, Ultima Actualizacion (10-Mar-2025)
+// AR3 PANEL, made by Alan Ruelas, v1.6, Ultima Actualizacion (12-Mar-2025)
 
 
 (function (thisObj) {
@@ -6,7 +6,7 @@
    var panel = thisObj instanceof Panel ? thisObj : new Window("palette", "Quick Actions", undefined, { resizeable: true });
 
             // Agregar texto como título en la parte superior
-            var titleText = panel.add("statictext", undefined, " By Alan Ruelas ©2025 | v.1.5", { multiline: true });
+            var titleText = panel.add("statictext", undefined, " By Alan Ruelas ©2025 | v.1.6", { multiline: true });
             titleText.alignment = "left";
             titleText.preferredSize.width = 250; // Ajusta el ancho para que se vea todo el texto
     
@@ -123,33 +123,87 @@
             }
         };
 
-        // 🔹 Audio Fade - Ahora también aplica fade-in de 3s al inicio
-        btnAudioFade.onClick = function () {
-            var comp = app.project.activeItem;
-            if (comp && comp.selectedLayers.length > 0) {
-                app.beginUndoGroup("Audio Fade");
-                for (var i = 0; i < comp.selectedLayers.length; i++) {
-                    var layer = comp.selectedLayers[i];
-                    if (layer.audioLevels) {
-                        var fadeInDuration = 1;
-                        var fadeOutDuration = 2;
-                        var inPoint = layer.inPoint;
-                        var outPoint = layer.outPoint;
+      
 
-                        // Aplicar fade-in
-                        layer.property("Audio Levels").setValueAtTime(inPoint, [-20, -20]);
-                        layer.property("Audio Levels").setValueAtTime(inPoint + fadeInDuration, [0, 0]);
+      // 🔹 Audio Fade - Soporta Click Normal y Option (⌥) + Click
+btnAudioFade.onClick = function () {
+    var isOptionPressed = ScriptUI.environment.keyboardState.altKey; // Detectar OPTION (⌥) en Mac
 
-                        // Aplicar fade-out
-                        layer.property("Audio Levels").setValueAtTime(outPoint - fadeOutDuration, [0, 0]);
-                        layer.property("Audio Levels").setValueAtTime(outPoint, [-20, -20]);
-                    }
-                }
-                app.endUndoGroup();
-            } else {
-                alert("Please select an audio layer.");
+    app.beginUndoGroup("Audio Fade");
+
+    if (isOptionPressed) {
+        // 🔹 Si presionas OPTION + Click, aplicar fade a TODAS las composiciones
+        for (var i = 1; i <= app.project.numItems; i++) {
+            var item = app.project.item(i);
+            if (item instanceof CompItem) {
+                applyAudioFadeToComp(item);
             }
-        };
+        }
+        alert("Fade aplicado en todos los archivos WAV y MP3 en todas las composiciones.");
+    } else {
+        // 🔹 Click normal: Aplica solo en capas seleccionadas
+        var comp = app.project.activeItem;
+        if (comp && comp.selectedLayers.length > 0) {
+            applyAudioFadeToSelected(comp);
+        } else {
+            alert("Por favor, selecciona una capa de audio.");
+        }
+    }
+
+    app.endUndoGroup();
+};
+
+// 🔹 Función para aplicar fade solo a las capas seleccionadas en la composición activa
+function applyAudioFadeToSelected(comp) {
+    for (var i = 0; i < comp.selectedLayers.length; i++) {
+        var layer = comp.selectedLayers[i];
+        if (layer.audioLevels) {
+            var fadeInDuration = 1;
+            var fadeOutDuration = 2;
+            var inPoint = layer.inPoint;
+            var outPoint = layer.outPoint;
+
+            // Aplicar fade-in
+            layer.property("Audio Levels").setValueAtTime(inPoint, [-20, -20]);
+            layer.property("Audio Levels").setValueAtTime(inPoint + fadeInDuration, [0, 0]);
+
+            // Aplicar fade-out
+            layer.property("Audio Levels").setValueAtTime(outPoint - fadeOutDuration, [0, 0]);
+            layer.property("Audio Levels").setValueAtTime(outPoint, [-20, -20]);
+        }
+    }
+}
+
+// 🔹 Función para aplicar fade a TODOS los archivos WAV y MP3 en el proyecto
+function applyAudioFadeToComp(comp) {
+    for (var i = 1; i <= comp.numLayers; i++) {
+        var layer = comp.layer(i);
+        if (layer instanceof AVLayer && layer.source instanceof FootageItem && layer.source.file) {
+            var ext = layer.source.file.name.split('.').pop().toLowerCase();
+
+            // Si es un archivo WAV o MP3, aplicar el fade-in y fade-out
+            if (ext === "wav" || ext === "mp3") {
+                var fadeInDuration = 1;
+                var fadeOutDuration = 2;
+                var inPoint = layer.inPoint;
+                var outPoint = layer.outPoint;
+
+                // Aplicar fade-in
+                layer.property("Audio Levels").setValueAtTime(inPoint, [-20, -20]);
+                layer.property("Audio Levels").setValueAtTime(inPoint + fadeInDuration, [0, 0]);
+
+                // Aplicar fade-out
+                layer.property("Audio Levels").setValueAtTime(outPoint - fadeOutDuration, [0, 0]);
+                layer.property("Audio Levels").setValueAtTime(outPoint, [-20, -20]);
+            }
+        }
+    }
+}
+
+
+
+
+
 
         // Botón Flip - Invierte horizontalmente la capa
         btnFlip.onClick = function () {
@@ -403,7 +457,7 @@ btnReverseKeyframes.onClick = function () {
 
 
 
-// Acción del botón: Ejecutar el script .command desde After Effects
+// ACTUALIZAR Acción del botón: Ejecutar el script .command desde After Effects
 btnUpdateScript.onClick = function () {
     var scriptFile = new File("~/downloads/update_ae_script.command");
 
@@ -464,7 +518,7 @@ btnAddBlackFade.onClick = function () {
 
 
 
-// 🔹 Remove Unused Files - Elimina archivos no utilizados en el proyecto, pero NO composiciones
+// 🔹 Remove Unused Files - Elimina archivos no utilizados en el proyecto, incluyendo audios, pero NO composiciones
 btnRemoveUnusedFiles.onClick = function () {
     if (app.project && app.project.numItems > 0) {
         app.beginUndoGroup("Remove Unused Files");
@@ -472,19 +526,24 @@ btnRemoveUnusedFiles.onClick = function () {
         // Iterar en reversa para evitar problemas al eliminar elementos
         for (var i = app.project.numItems; i > 0; i--) {
             var item = app.project.item(i);
-            
-            // Verifica si el ítem no está en uso y NO es una composición
-            if (item.usedIn.length === 0 && !(item instanceof CompItem)) {
-                item.remove();
+
+            // Verificar si el item no está en uso en ninguna composición y NO es una composición
+            if (!(item instanceof CompItem) && !(item instanceof FolderItem) && item.usedIn.length === 0) {
+                try {
+                    item.remove();
+                } catch (e) {
+                    $.writeln("No se pudo eliminar: " + item.name);
+                }
             }
         }
 
         app.endUndoGroup();
-        alert("Archivos no utilizados eliminados, excepto composiciones.");
+        alert("Archivos no utilizados eliminados, incluyendo audios, excepto composiciones.");
     } else {
         alert("No hay un proyecto abierto o no hay archivos.");
     }
 };
+
 
 
 
@@ -596,7 +655,48 @@ btnOrganizeProject.onClick = function () {
 
     } while (movedFiles > 0); // Repite hasta que ya no haya más archivos en la raíz
 
+  // 🔹 Nueva función para mover carpetas a EXTRA sin afectar la jerarquía interna
+function moveExtraFolders() {
+    var extraFolder = findFolder("EXTRA") || app.project.items.addFolder("EXTRA");
+    var movedFolders;
+    var maxIterations = 50; // 🔹 Evita bucles infinitos (límite de intentos)
+    var iterationCount = 0;
+
+    do {
+        movedFolders = 0; // Reiniciamos el contador en cada iteración
+
+        for (var i = app.project.numItems; i > 0; i--) {
+            var item = app.project.item(i);
+
+            // 🔹 Si no es una carpeta o ya está en EXTRA, la ignoramos
+            if (!(item instanceof FolderItem) || item.parentFolder !== app.project.rootFolder) {
+                continue;
+            }
+
+            // 🔹 Si la carpeta NO es "MEDIA", "AUDIO" o "COMPS", moverla a "EXTRA"
+            if (item.name !== "MEDIA" && item.name !== "AUDIO" && item.name !== "COMPS" && item.name !== "EXTRA") {
+                item.parentFolder = extraFolder;
+                movedFolders++;
+            }
+        }
+
+        iterationCount++; // Incrementa el contador de iteraciones
+        if (iterationCount >= maxIterations) {
+            alert("❗ Se alcanzó el límite de iteraciones al mover carpetas a EXTRA. Revisa posibles errores.");
+            break; // Sale del bucle para evitar que After Effects se congele
+        }
+
+    } while (movedFolders > 0); // 🔹 Repite hasta que todas las carpetas estén en EXTRA
+}
+
+
+
+    // Ejecutar la función de mover carpetas a EXTRA
+    moveExtraFolders();
+
+    app.endUndoGroup();
 };
+
 
 
 
@@ -896,3 +996,16 @@ dropdownFX.onChange = function() {
         buildUI(thisObj).show();
     }
 })(this);
+
+
+
+
+
+
+
+
+
+
+
+
+
