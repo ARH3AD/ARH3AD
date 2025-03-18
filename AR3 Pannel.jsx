@@ -1,4 +1,4 @@
-// AR3 PANEL, made by Alan Ruelas, v1.6, Ultima Actualizacion (12-Mar-2025)
+// AR3 PANEL, made by Alan Ruelas, v1.6, Ultima Actualizacion (18-Mar-2025)
 
 
 (function (thisObj) {
@@ -6,7 +6,7 @@
    var panel = thisObj instanceof Panel ? thisObj : new Window("palette", "Quick Actions", undefined, { resizeable: true });
 
             // Agregar texto como título en la parte superior
-            var titleText = panel.add("statictext", undefined, " By Alan Ruelas ©2025 | v.1.6", { multiline: true });
+            var titleText = panel.add("statictext", undefined, " By Alan Ruelas ©2025 | v.1.6 NEW!", { multiline: true });
             titleText.alignment = "left";
             titleText.preferredSize.width = 250; // Ajusta el ancho para que se vea todo el texto
     
