@@ -1,4 +1,4 @@
-// AR3 PANEL, made by Alan Ruelas, v1.6, Ultima Actualizacion (18-Mar-2025)
+// AR3 PANEL, made by Alan Ruelas, v2, Ultima Actualizacion (28-Mar-2025)
 
 
 (function (thisObj) {
@@ -6,7 +6,7 @@
    var panel = thisObj instanceof Panel ? thisObj : new Window("palette", "Quick Actions", undefined, { resizeable: true });
 
             // Agregar texto como título en la parte superior
-            var titleText = panel.add("statictext", undefined, " By Alan Ruelas ©2025 | v.1.6 NEW!", { multiline: true });
+            var titleText = panel.add("statictext", undefined, " By Alan Ruelas ©2025 | v.2", { multiline: true });
             titleText.alignment = "left";
             titleText.preferredSize.width = 250; // Ajusta el ancho para que se vea todo el texto
     
@@ -68,20 +68,36 @@
 
 
 
-        // Button click action for rotation -90
-        btnRotate.onClick = function () {
-            var comp = app.project.activeItem;
-            if (comp && comp.selectedLayers.length > 0) {
-                app.beginUndoGroup("Set Rotation to -90");
-                for (var i = 0; i < comp.selectedLayers.length; i++) {
-                    var layer = comp.selectedLayers[i];
-                    layer.property("Transform").property("Rotation").setValue(-90);
-                }
-                app.endUndoGroup();
-            } else {
-                alert("Please select at least one layer in the active composition.");
+        // Botón para rotar -90° y ajustar escala a [51, 51]
+btnRotate.onClick = function () {
+    // Hacer una pequeña pausa para permitir que altKey se actualice correctamente
+    $.sleep(10); 
+
+    var isOptionPressed = ScriptUI.environment.keyboardState.altKey;
+
+    var comp = app.project.activeItem;
+    if (comp && comp.selectedLayers.length > 0) {
+        app.beginUndoGroup("Rotate Layer");
+
+        for (var i = 0; i < comp.selectedLayers.length; i++) {
+            var layer = comp.selectedLayers[i];
+
+            // Siempre rota -90
+            layer.property("Transform").property("Rotation").setValue(-90);
+
+            // Si Option está presionado, cambia también la escala
+            if (isOptionPressed) {
+                layer.property("Transform").property("Scale").setValue([51, 51]);
             }
-        };
+        }
+
+        app.endUndoGroup();
+    } else {
+        alert("Por favor, selecciona al menos una capa en la composición activa.");
+    }
+};
+
+
 
 
 
