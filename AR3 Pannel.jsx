@@ -1,4 +1,4 @@
-// AR3 PANEL, made by Alan Ruelas, v2, Ultima Actualizacion (28-Mar-2025)
+// AR3 PANEL, made by Alan Ruelas, v3, Ultima Actualizacion (13-May-2025) UPDAYTED
 
 
 (function (thisObj) {
@@ -6,12 +6,12 @@
    var panel = thisObj instanceof Panel ? thisObj : new Window("palette", "Quick Actions", undefined, { resizeable: true });
 
             // Agregar texto como título en la parte superior
-            var titleText = panel.add("statictext", undefined, " By Alan Ruelas ©2025 | v.2", { multiline: true });
+            var titleText = panel.add("statictext", undefined, " By Alan Ruelas ©2025 | v.3", { multiline: true });
             titleText.alignment = "left";
             titleText.preferredSize.width = 250; // Ajusta el ancho para que se vea todo el texto
     
 
-
+        var btnMuteAudio = panel.add("button", undefined, "MUTE AUDIO ❇");
         var btnLoop = panel.add("button", undefined, "Loop");
         var btnRotate = panel.add("button", undefined, "Rotate -90°");
         var btnWiggle = panel.add("button", undefined, "Wiggle");
@@ -21,6 +21,7 @@
         var btnMoveLayerBack = panel.add("button", undefined, "Move Layer Back");
         var btnScale100to0 = panel.add("button", undefined, "Scale 100 → 0");
         var btnZStaircase = panel.add("button",     undefined, "||| Escalera Profundidad");
+        var btnCreateCube = panel.add("button", undefined, "3D Cube (6 Layers) ❇");
         var btnFlip = panel.add("button", undefined, "Flip");
         var btnFlip3DD = panel.add("button", undefined, "3D FLIP");
         var btnReverseKeyframes = panel.add("button", undefined, "Reverse Keyframes");
@@ -330,6 +331,45 @@ btnFlip3DD.onClick = function () {
 
 
 
+// 🔹 Mute Audio en todas las composiciones excepto WAV & MP3
+btnMuteAudio.onClick = function () {
+    if (!app.project || app.project.numItems === 0) {
+        alert("No hay composiciones en el proyecto.");
+        return;
+    }
+
+    app.beginUndoGroup("Mute Audios Excepto WAV & MP3");
+
+    // Recorrer todas las composiciones del proyecto
+    for (var i = 1; i <= app.project.numItems; i++) {
+        var item = app.project.item(i);
+
+        // Verificar si el elemento es una composición
+        if (item instanceof CompItem) {
+            for (var j = 1; j <= item.numLayers; j++) {
+                var layer = item.layer(j);
+
+                // Verificar si es una capa de audio
+                if (layer instanceof AVLayer && layer.source instanceof FootageItem && layer.source.file) {
+                    var ext = layer.source.file.name.split('.').pop().toLowerCase();
+
+                    // Si NO es WAV o MP3, silenciar
+                    if (ext !== "wav" && ext !== "mp3") {
+                        layer.audioEnabled = false; // 🔇 Mute layer
+                    }
+                }
+
+                // Verificar si es una precomposición (CompItem anidado)
+                if (layer.source instanceof CompItem) {
+                    layer.audioEnabled = false; // 🔇 Mute precomp
+                }
+            }
+        }
+    }
+
+    app.endUndoGroup();
+    alert("Todos los audios (excepto WAV & MP3) han sido muteados en todas las composiciones.");
+};
 
 
 
@@ -500,6 +540,98 @@ btnUpdateScript.onClick = function () {
 
 
 
+// 🔹 Crear Cubo 3D compatible con Imágenes y Shape Layers sin espacios
+btnCreateCube.onClick = function() {
+    var comp = app.project.activeItem;
+    if (!(comp && comp instanceof CompItem)) {
+        alert("No hay una composición activa.");
+        return;
+    }
+
+    var selectedLayers = comp.selectedLayers;
+    if (selectedLayers.length !== 6) {
+        alert("Selecciona exactamente 6 capas.");
+        return;
+    }
+
+    app.beginUndoGroup("Crear Cubo 3D");
+
+    // Función para obtener el tamaño real de una capa (compatible con imágenes y Shape Layers)
+    function getLayerSize(layer) {
+        if (layer.source) {
+            return { width: layer.source.width, height: layer.source.height };
+        } else {
+            var bounds = layer.sourceRectAtTime(0, false);
+            return { width: bounds.width, height: bounds.height, left: bounds.left, top: bounds.top };
+        }
+    }
+
+    // Tomar la primera capa como referencia
+    var refLayer = selectedLayers[0];
+    var refSize = getLayerSize(refLayer);
+    var size = refSize.width; // Usar el ancho como base para el cubo
+
+    // Obtener el centro de la composición
+    var compCenter = [comp.width / 2, comp.height / 2, 0];
+
+        // Crear un Null Object para controlar el cubo en el centro de la composición
+    var nullController = comp.layers.addNull();
+    nullController.name = "Cubo 3D Control";
+    nullController.threeDLayer = true;
+    nullController.position.setValue(compCenter);
+
+
+    // **Ajuste de posiciones y rotaciones para cerrar correctamente el cubo**
+    var positions = [
+        [0, 0, size / 2],  // **Frontal (Ahora está en su lugar correcto)**
+        [0, 0, -size / 2], // Trasera
+        [0, -size / 2, 0], // Superior
+        [0, size / 2, 0],  // Inferior
+        [-size / 2, 0, 0], // Izquierda
+        [size / 2, 0, 0]   // Derecha
+    ];
+
+    var rotations = [
+        [0, 0, 0],     // **Frontal**
+        [0, 180, 0],   // Trasera
+        [-90, 0, 0],   // Superior
+        [90, 0, 0],    // Inferior
+        [0, -90, 0],   // Izquierda
+        [0, 90, 0]     // Derecha
+    ];
+
+    // **Ajustar cada capa para encajar en el cubo sin espacios**
+    for (var i = 0; i < 6; i++) {
+        var layer = selectedLayers[i];
+        var layerSize = getLayerSize(layer);
+        layer.threeDLayer = true;
+
+        // Ajustar el punto de anclaje correctamente
+        if (!layer.source) {
+            // Para Shape Layers, ajustar punto de anclaje al centro real
+            var newAnchor = [layerSize.width / 2 + layerSize.left, layerSize.height / 2 + layerSize.top, 0];
+            layer.anchorPoint.setValue(newAnchor);
+        } else {
+            // Para imágenes, usar centro normal
+            layer.anchorPoint.setValue([layerSize.width / 2, layerSize.height / 2, 0]);
+        }
+
+        // **Aplicar rotación y posición precisa**
+        layer.orientation.setValue(rotations[i]);
+        layer.position.setValue([
+            compCenter[0] + positions[i][0],
+            compCenter[1] + positions[i][1],
+            compCenter[2] + positions[i][2]
+        ]);
+
+
+        // Vincular la capa al Null Object
+        layer.parent = nullController;
+    }
+
+    app.endUndoGroup();
+    alert("✅ Cubo 3D corregido (Frontal alineado correctamente).");
+};
 
 
 
@@ -586,7 +718,7 @@ btnOrganizeProject.onClick = function () {
     }
 
     // Tipos de archivos que se deben mover
-    var mediaExtensions = ["mp4", "mov", "avi", "mkv", "jpg", "png", "tif", "tga", "bmp", "gif", "svg", "ai", "psd", "eps", "webp", "CR3", "jpeg"];
+    var mediaExtensions = ["mp4", "mov", "avi", "mkv", "jpg", "png", "tif", "tga", "bmp", "gif", "svg", "ai", "psd", "eps", "webp", "CR3", "jpeg", "glb","exr"];
     var audioExtensions = ["mp3", "wav", "aac", "ogg", "flac"];
 
     var movedFiles = 0;
@@ -985,6 +1117,7 @@ dropdownFX.onChange = function() {
         btnFlip3DD.alignment = "left";
         dropdownFX.alignment = "left";
         btnApplyFX.alignment = "left";
+        btnMuteAudio.alignment = "left";
 
         btnMoveLayerBack.alignment = "left";
         btnScale100to0.alignment = "left";
@@ -993,6 +1126,8 @@ dropdownFX.onChange = function() {
         btnAddBlackFade.alignment = "left";
         btnRemoveUnusedFiles.alignment = "left";
 
+        btnCreateCube.alignment = "left";
+        
         btnOrganizeProject.alignment = "left";
 
         btnRotate.alignment = "left";
@@ -1012,16 +1147,3 @@ dropdownFX.onChange = function() {
         buildUI(thisObj).show();
     }
 })(this);
-
-
-
-
-
-
-
-
-
-
-
-
-
